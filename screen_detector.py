@@ -13,7 +13,7 @@ from hashes import p_hash, compare_hashes
 best_value = 1
 hash_original = ""
 original_image = ""
-best_image_hash = ""
+best_image = None
 stats = []
 
 
@@ -22,6 +22,7 @@ def find_screen(source, dest):
     global hash_original
     global best_value
     global stats
+    global best_image
 
     os.chdir(source)
     i = 0
@@ -64,8 +65,7 @@ def _find_contours(img, thresh, i ,j, dest):
     Find contours in the thresholded image, keep only the largest
     ones, and initialize our screen contour
     '''
-    global best_image_hash
-    best_image = img
+    global best_image
 
     _, cnts, _ = cv2.findContours(thresh.copy(), cv2.RETR_TREE, 
         cv2.CHAIN_APPROX_SIMPLE)
@@ -90,8 +90,6 @@ def _find_contours(img, thresh, i ,j, dest):
                     cv2.imwrite(os.path.join(dest, str(i) + str(j) + ".jpg"), 
                                 roi)
     
-    best_image_hash = p_hash(best_image, convert=False)
-
 
 def _get_original_image_data():
     try:
@@ -126,7 +124,7 @@ def _has_best_score(img):
     
 
 def _get_position_accuracy(right_position):
-    global best_image_hash
+    global best_image
     
     start = int(right_position) - 50
     if (start <= 0):
@@ -135,19 +133,20 @@ def _get_position_accuracy(right_position):
     
     best = 1
     best_position = 0
+
+    hash2 = p_hash(best_image, convert=False)
     for i in range(start, end):
         pos = str(i)
         if (i < 10):
             pos = "0" + pos
         img = cv2.imread('../../frames/' + pos + ".jpg")
         hash1 = p_hash(img, convert=True)
-        diff = compare_hashes(hash1, best_image_hash)
+        diff = compare_hashes(hash1, hash2)
         if (diff < best):
             best = diff
             best_position = i
+    print("HASH", best)
     return abs(int(right_position) - best_position)
-
-
 
 
 if __name__ == "__main__":
