@@ -17,6 +17,9 @@ original_image = ""
 
 def find_screen(source, dest):
     #shutil.rmtree(self.out_dir + "/" + self.THRESH_DIR)
+    global hash_original
+    global best_value
+
     os.chdir(source)
     i = 0
     for advertising in os.listdir(os.getcwd()):
@@ -25,6 +28,7 @@ def find_screen(source, dest):
         i += 1
         j = 0
         for sample in os.listdir(os.getcwd()):
+            best_value = 1
             os.chdir(sample)
             j += 1
             
@@ -47,7 +51,7 @@ def _get_best_results(img, i, j, dest):
 
         #ret, thresh = cv2.threshold(img,0,255,
         #cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-        _find_contours(img, i, j)
+        _find_contours(thresh, i, j, dest)
 
 
 def _find_contours(img, i ,j, dest):
@@ -55,7 +59,7 @@ def _find_contours(img, i ,j, dest):
     Find contours in the thresholded image, keep only the largest
     ones, and initialize our screen contour
     '''
-    (cnts, _) = cv2.findContours(img.copy(), cv2.RETR_TREE, 
+    _, cnts, _ = cv2.findContours(img.copy(), cv2.RETR_TREE, 
         cv2.CHAIN_APPROX_SIMPLE)
     cnts = sorted(cnts, key = cv2.contourArea, reverse = True)[:3]
 
@@ -74,7 +78,8 @@ def _find_contours(img, i ,j, dest):
             if (_is_big_enough(img, w, h)):
                 roi = img[y:y+h, x:x+w]
                 if (_has_best_score(roi)):
-                    cv2.imwrite(os.path.join(dest, str(i) + str(j)))
+                    cv2.imwrite(os.path.join(dest, str(i) + str(j) + ".jpg"), 
+                                roi)
 
 
 def _get_original_image():
@@ -90,16 +95,19 @@ def _get_original_image():
 
 
 def _get_original_hash(image):
-    return p_hash(image)
+    return p_hash(image, convert=True)
 
 
 def _is_big_enough(img, w, h):
-    h_orig, w_orig, channels = img.shape
+    h_orig, w_orig = img.shape
     return ((w * h) >= ((h_orig * w_orig) / 20))
 
 
 def _has_best_score(img):
-    hash_string = p_hash(img)
+    global best_value
+    global hash_original
+
+    hash_string = p_hash(img, convert=False)
     difference = compare_hashes(hash_string, hash_original)
     if (difference < best_value):
         best_value = difference

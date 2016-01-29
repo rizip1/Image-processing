@@ -2,14 +2,14 @@ import cv2
 import numpy as np
 
 
-def p_hash(img):
+def p_hash(img, convert):
     '''
     Creates pHash string from given image.
     '''
     big_kernel = 64
     small_kernel = int(big_kernel / 4)
 
-    img = _get_shrinked_grayscale(img, big_kernel, big_kernel)
+    img = _get_shrinked_grayscale(img, big_kernel, big_kernel, convert)
     img = np.float32(img) / 255.0 
     img = cv2.dct(img)
    
@@ -26,11 +26,11 @@ def p_hash(img):
     return ''.join(hash_string)
 
 
-def a_hash(img):
+def a_hash(img, convert):
     '''
     Creates aHash string from given image.
     '''
-    img = _get_shrinked_grayscale(img, 16, 16)
+    img = _get_shrinked_grayscale(img, 16, 16, convert)
     average = _get_intensity_average(img)
     hash_string = []
 
@@ -44,11 +44,11 @@ def a_hash(img):
     return ''.join(hash_string)
 
 
-def d_hash(img):
+def d_hash(img, convert):
     '''
     Creates dHash string from given image.
     '''
-    img = _get_shrinked_grayscale(img, 17, 16)
+    img = _get_shrinked_grayscale(img, 17, 16, convert)
     hash_string = []
 
     for i in range(len(img)):
@@ -78,14 +78,15 @@ def compare_hashes(hash1, hash2):
     return float(mismatches) / len(hash1)
 
 
-def _get_shrinked_grayscale(img, width, height):
+def _get_shrinked_grayscale(img, width, height, convert=True):
     '''
     Shrink image using given width and height and
     convert it into grayscale.
     '''
     img = cv2.resize(img, (width, height), fx=0, fy=0,
                      interpolation = cv2.INTER_AREA)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    if (convert):
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     return img
 
 
