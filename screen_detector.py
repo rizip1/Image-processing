@@ -40,9 +40,12 @@ def find_screen(source, dest):
             img = cv2.imread('img.jpg', 0)
             original_image_data = _get_original_image_data()
             hash_original = _get_original_hash(original_image_data['img'])
+            #otsu(img, i, j, dest)
             _get_best_results(img, i, j, dest)
-
-            stats.append(_get_position_accuracy(original_image_data['position']))
+            
+            accuracy = _get_position_accuracy(original_image_data['position'])
+            print(accuracy)
+            stats.append(accuracy)
 
             os.chdir("../")
         os.chdir("../")
@@ -58,6 +61,13 @@ def _get_best_results(img, i, j, dest):
         #ret, thresh = cv2.threshold(img,0,255,
         #cv2.THRESH_BINARY+cv2.THRESH_OTSU)
         _find_contours(img, thresh, i, j, dest)
+
+
+def otsu(img, i, j, dest):
+     blur = cv2.GaussianBlur(img,(5,5),0)
+     ret3,th = cv2.threshold(blur,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+     _find_contours(img, th, i, j, dest)
+
 
 
 def _find_contours(img, thresh, i ,j, dest):
