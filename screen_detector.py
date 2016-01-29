@@ -13,12 +13,15 @@ from hashes import p_hash, compare_hashes
 best_value = 1
 hash_original = ""
 original_image = ""
+best_image_hash = ""
+stats = []
 
 
 def find_screen(source, dest):
     #shutil.rmtree(self.out_dir + "/" + self.THRESH_DIR)
     global hash_original
     global best_value
+    global stats
 
     os.chdir(source)
     i = 0
@@ -34,14 +37,16 @@ def find_screen(source, dest):
             
             # it also turns into grayscale
             img = cv2.imread('img.jpg', 0)
-            original_image = _get_original_image()
-            hash_original = _get_original_hash(original_image)
+            original_image_data = _get_original_image_data()
+            hash_original = _get_original_hash(original_image_data['img'])
             _get_best_results(img, i, j, dest)
+
+            stats.append(_get_position_accuracy(original_image_data['position']))
 
             os.chdir("../")
         os.chdir("../")
         os.chdir("../")
-
+    print("STATS", stats)
 
 def _get_best_results(img, i, j, dest):
     threshold_values = [50, 70, 90, 110, 130, 150, 170, 190]
@@ -51,17 +56,20 @@ def _get_best_results(img, i, j, dest):
 
         #ret, thresh = cv2.threshold(img,0,255,
         #cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-        _find_contours(thresh, i, j, dest)
+        _find_contours(img, thresh, i, j, dest)
 
 
-def _find_contours(img, i ,j, dest):
+def _find_contours(img, thresh, i ,j, dest):
     '''
     Find contours in the thresholded image, keep only the largest
     ones, and initialize our screen contour
     '''
-    _, cnts, _ = cv2.findContours(img.copy(), cv2.RETR_TREE, 
+    global best_image_hash
+    best_image = img
+
+    _, cnts, _ = cv2.findContours(thresh.copy(), cv2.RETR_TREE, 
         cv2.CHAIN_APPROX_SIMPLE)
-    cnts = sorted(cnts, key = cv2.contourArea, reverse = True)[:3]
+    cnts = sorted(cnts, key = cv2.contourArea, reverse = True)[:4]
 
     # loop over our contours
     for c in cnts:
@@ -78,21 +86,22 @@ def _find_contours(img, i ,j, dest):
             if (_is_big_enough(img, w, h)):
                 roi = img[y:y+h, x:x+w]
                 if (_has_best_score(roi)):
+                    best_image = roi
                     cv2.imwrite(os.path.join(dest, str(i) + str(j) + ".jpg"), 
                                 roi)
+    
+    best_image_hash = p_hash(best_image, convert=False)
 
 
-def _get_original_image():
+def _get_original_image_data():
     try:
         with open('target_frame.txt', "r") as target:
             temp = target.read().splitlines()
             frame = temp[0]
-            frame += ".jpg"
     except IOError:
         raise("Error while reading target_frame text file!")
-    img = cv2.imread(os.path.join(os.getcwd(), "../../frames", frame))
-    return img
-
+    img = cv2.imread(os.path.join(os.getcwd(), "../../frames", frame + ".jpg"))
+    return {'img': img, 'position': frame}
 
 def _get_original_hash(image):
     return p_hash(image, convert=True)
@@ -115,6 +124,31 @@ def _has_best_score(img):
     else:
         return False
     
+
+def _get_position_accuracy(right_position):
+    global best_image_hash
+    
+    start = int(right_position) - 50
+    if (start <= 0):
+        start = 1
+    end = int(right_position) + 50
+    
+    best = 1
+    best_position = 0
+    for i in range(start, end):
+        pos = str(i)
+        if (i < 10):
+            pos = "0" + pos
+        img = cv2.imread('../../frames/' + pos + ".jpg")
+        hash1 = p_hash(img, convert=True)
+        diff = compare_hashes(hash1, best_image_hash)
+        if (diff < best):
+            best = diff
+            best_position = i
+    return abs(int(right_position) - best_position)
+
+
+
 
 if __name__ == "__main__":
     source = sys.argv[1]
