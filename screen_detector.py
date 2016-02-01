@@ -6,7 +6,7 @@ import os
 import shutil
 import traceback
 
-from hashes import p_hash, compare_hashes
+from hashes import p_hash, a_hash, d_hash, compare_hashes
 
 
 class ScreenDetector:
@@ -22,7 +22,7 @@ class ScreenDetector:
         self.hash_original = ""
         self.original_image = None
         self.best_image = None
-        self.stats = []
+        self.stats = {}
 
 
     def find_screen(self, method):
@@ -34,26 +34,32 @@ class ScreenDetector:
             for sample in os.listdir(os.getcwd()):
                 self.best_score = 1
                 os.chdir(sample)
-                
+                image_name = advertising + '_' + sample + '.jpg'
+
                 # also turns into grayscale
                 img = cv2.imread('img.jpg', 0)
                 image_data = self._get_original_image_data()
                 self.hash_original = self._get_original_hash(image_data['img'])
-                self._call_recognition_method(img, method, advertising, sample)
+                self._call_recognition_method(img, method)
                 
+                cv2.imwrite(os.path.join(self.dest, image_name), 
+                                         self.best_image)
                 accuracy = self._get_position_accuracy(image_data['position'])
-                self.stats.append(accuracy)
+
+                print(image_name, ":", accuracy)
+                self.stats[image_name] = accuracy
 
                 os.chdir("../")
             os.chdir("../")
             os.chdir("../")
+        self._put_stats_into_file()
 
     
     def get_stats(self):
         return self.stats
 
 
-    def _iterate_thresholds(self, img, advertising, sample):
+    def _iterate_thresholds(self, img):
         '''
         Detect tv in the image using iteration through threshold values.
         '''
@@ -61,17 +67,17 @@ class ScreenDetector:
 
         for value in threshold_values:
             ret, thresh = cv2.threshold(img, value, 255, cv2.THRESH_BINARY)
-            self._find_contours(img, thresh, advertising, sample)
+            self._find_contours(img, thresh)
 
 
-    def _otsu(self, img, advertising, sample):
+    def _otsu(self, img):
          blur = cv2.GaussianBlur(img, (5, 5), 0)
          ret, thresh = cv2.threshold(blur, 0, 255,
                                      cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-         self._find_contours(img, thresh, advertising, sample)
+         self._find_contours(img, thresh)
 
 
-    def _find_contours(self, img, thresh, advertising, sample):
+    def _find_contours(self, img, thresh):
         '''
         Find contours in the thresholded image, keep only the largest
         ones, and initialize our screen contour
@@ -96,8 +102,6 @@ class ScreenDetector:
                     roi = img[y:y+h, x:x+w]
                     if (self._has_best_score(roi)):
                         self.best_image = roi
-                        file_name = advertising + "_" + sample + ".jpg"
-                        cv2.imwrite(os.path.join(self.dest, file_name), roi)
         
 
     def _get_original_image_data(self):
@@ -131,11 +135,11 @@ class ScreenDetector:
             return False
 
 
-    def _call_recognition_method(self, img, method, advertising, sample):
+    def _call_recognition_method(self, img, method):
         if (method == ScreenDetector.OTSU):
-            self._otsu(img, advertising, sample)
+            self._otsu(img)
         elif (method == ScreenDetector.ITERATE):
-            self._iterate_thresholds(img, advertising, sample)
+            self._iterate_thresholds(img)
         else:
             raise("Unsupported method provided.")
         
@@ -172,16 +176,22 @@ class ScreenDetector:
             else:
                 os.mkdir(self.dest)
         except:
-            print(traceback.print_exc(file=sys.stdout))
-            sys.exit()
             raise("Could not prepare destination directory.")
+
+
+    def _put_stats_into_file(self):
+        try:
+            with open(os.path.join(self.dest, 'results.txt'), 'w+') as results:
+                results.write(str(self.stats))
+        except:
+            raise("Could not save the results.")
 
 
 if __name__ == "__main__":
     source = sys.argv[1]
     dest = os.path.join(os.getcwd(), 'src/screen_detector')
     sd = ScreenDetector(source, dest)
-    sd.find_screen(ScreenDetector.OTSU)
+    sd.find_screen(ScreenDetector.ITERATE)
     stats = sd.get_stats()
-    print(stats)
+    print(str(stats))
 
