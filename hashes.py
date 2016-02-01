@@ -6,7 +6,7 @@ def p_hash(img, convert):
     '''
     Creates pHash string from given image.
     '''
-    big_kernel = 64
+    big_kernel = 32
     small_kernel = int(big_kernel / 4)
 
     img = _get_shrinked_grayscale(img, big_kernel, big_kernel, convert)
@@ -30,7 +30,7 @@ def a_hash(img, convert):
     '''
     Creates aHash string from given image.
     '''
-    img = _get_shrinked_grayscale(img, 16, 16, convert)
+    img = _get_shrinked_grayscale(img, 8, 8, convert)
     average = _get_intensity_average(img)
     hash_string = []
 
@@ -48,7 +48,7 @@ def d_hash(img, convert):
     '''
     Creates dHash string from given image.
     '''
-    img = _get_shrinked_grayscale(img, 17, 16, convert)
+    img = _get_shrinked_grayscale(img, 9, 8, convert)
     hash_string = []
 
     for i in range(len(img)):
