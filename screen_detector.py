@@ -1,12 +1,11 @@
-import numpy as np
 import cv2
 import sys
-import glob
+import collections
 import os
 import shutil
-import traceback
+import matplotlib.pyplot as plt
 
-from hashes import p_hash, a_hash, d_hash, compare_hashes
+from hashes import p_hash, compare_hashes
 
 
 class ScreenDetector:
@@ -27,7 +26,9 @@ class ScreenDetector:
 
     def find_screen(self, method):
         self._clean_or_create_dest_dir()
+        average_error = 0
         os.chdir(source)
+
         for advertising in os.listdir(os.getcwd()):
             os.chdir(advertising)
             os.chdir(advertising)
@@ -35,6 +36,7 @@ class ScreenDetector:
                 self.best_score = 1
                 os.chdir(sample)
                 image_name = advertising + '_' + sample + '.jpg'
+                print(image_name)
 
                 # also turns into grayscale
                 img = cv2.imread('img.jpg', 0)
@@ -45,19 +47,16 @@ class ScreenDetector:
                 cv2.imwrite(os.path.join(self.dest, image_name), 
                                          self.best_image)
                 accuracy = self._get_position_accuracy(image_data['position'])
-
-                print(image_name, ":", accuracy)
+                average_error += accuracy
                 self.stats[image_name] = accuracy
 
                 os.chdir("../")
             os.chdir("../")
             os.chdir("../")
         self._put_stats_into_file()
-
+        self._create_hist()
+        return float(average_error) / len(self.stats) 
     
-    def get_stats(self):
-        return self.stats
-
 
     def _iterate_thresholds(self, img):
         '''
@@ -172,7 +171,10 @@ class ScreenDetector:
         try:
             if (os.path.isdir(self.dest)):
                 for item in os.listdir(self.dest):
-                    os.remove(os.path.join(self.dest, item))
+                    if (os.path.isdir(os.path.join(self.dest, item))):
+                        shutil.rmtree(os.path.join(self.dest, item))
+                    else:
+                        os.remove(os.path.join(self.dest, item))
             else:
                 os.mkdir(self.dest)
         except:
@@ -181,17 +183,37 @@ class ScreenDetector:
 
     def _put_stats_into_file(self):
         try:
-            with open(os.path.join(self.dest, 'results.txt'), 'w+') as results:
-                results.write(str(self.stats))
+            os.mkdir(os.path.join(self.dest, 'results'))
+            file_name = 'results/results.txt'
+            with open(os.path.join(self.dest, file_name), 'w+')  as results:
+                self.stats = collections.OrderedDict(sorted(self.stats.items()))
+                
+                for key in self.stats.keys():
+                    results.write(key + ":" + str(self.stats[key]) + "\n")
         except:
             raise("Could not save the results.")
+
+
+    def _create_hist(self):
+        plt.hist(list(self.stats.values()),
+                bins=ScreenDetector.SEARCHED_FRAMES+1,
+                range=(0, ScreenDetector.SEARCHED_FRAMES+1), width=1, 
+                color='pink')
+        plt.xlabel('Error')
+        plt.ylabel('Advertising count')
+        plt.title('Threshold and hash results')
+
+        plt.axis([0, ScreenDetector.SEARCHED_FRAMES+1, 0, len(self.stats)+1])
+        plt.grid(True)
+
+        hist_path = os.path.join(self.dest, 'results/histogram.png')
+        plt.savefig(hist_path)
 
 
 if __name__ == "__main__":
     source = sys.argv[1]
     dest = os.path.join(os.getcwd(), 'src/screen_detector')
     sd = ScreenDetector(source, dest)
-    sd.find_screen(ScreenDetector.ITERATE)
-    stats = sd.get_stats()
-    print(str(stats))
+    average_error = sd.find_screen(ScreenDetector.ITERATE)
+    print("Average error: ", average_error)
 
