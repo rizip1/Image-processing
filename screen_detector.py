@@ -25,6 +25,11 @@ class ScreenDetector:
 
 
     def find_screen(self, method):
+        '''
+        Iterate through all the advertising in the given folder, find screen
+        for each image and create results.txt and histogram.png files
+        in given_folder/results/ directory.
+        '''
         self._clean_or_create_dest_dir()
         average_error = 0
         os.chdir(source)
@@ -70,16 +75,19 @@ class ScreenDetector:
 
 
     def _otsu(self, img):
-         blur = cv2.GaussianBlur(img, (5, 5), 0)
-         ret, thresh = cv2.threshold(blur, 0, 255,
-                                     cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-         self._find_contours(img, thresh)
+        '''
+        Detect tv in the image using Otsu's binarization.
+        '''
+        blur = cv2.GaussianBlur(img, (5, 5), 0)
+        ret, thresh = cv2.threshold(blur, 0, 255,
+                                    cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+        self._find_contours(img, thresh)
 
 
     def _find_contours(self, img, thresh):
         '''
         Find contours in the thresholded image, keep only the largest
-        ones, and initialize our screen contour
+        ones and from these choose one with best hash score.
         '''
         _, cnts, _ = cv2.findContours(thresh.copy(), cv2.RETR_TREE, 
             cv2.CHAIN_APPROX_SIMPLE)
@@ -104,6 +112,10 @@ class ScreenDetector:
         
 
     def _get_original_image_data(self):
+        '''
+        Return image object and position on which it appears
+        in the original video.
+        '''
         try:
             with open('target_frame.txt', "r") as target:
                 temp = target.read().splitlines()
@@ -214,6 +226,10 @@ if __name__ == "__main__":
     source = sys.argv[1]
     dest = os.path.join(os.getcwd(), 'src/screen_detector')
     sd = ScreenDetector(source, dest)
-    average_error = sd.find_screen(ScreenDetector.ITERATE)
+
+    if (len(sys.argv) > 2):
+        average_error = sd.find_screen(int(sys.argv[2]))
+    else:
+        average_error = sd.find_screen(ScreenDetector.ITERATE)
     print("Average error: ", average_error)
 
