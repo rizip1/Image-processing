@@ -115,18 +115,18 @@ def get_video_props(dest):
 if __name__ == '__main__':
     action = sys.argv[1]
     if (action == 'create_dirs'):
-        if (len(sys.argv) > 2):
-            create_hash_structure(sys.argv[1], sys.argv[2])
+        if (len(sys.argv) > 3):
+            create_hash_structure(sys.argv[2], int(sys.argv[3]))
         else:
-            create_hash_structure(sys.argv[1])
+            create_hash_structure(sys.argv[2])
     elif (action == 'parse_images'):
         argv = sys.argv
         _check_params(argv)
-        ext = (argv[3], 'jpg')[len(argv) > 3]
-        obtain_images(source = argv[1], to = argv[2], every_nth = argv[3],
+        ext = (argv[4], 'jpg')[len(argv) > 3]
+        obtain_images(source = argv[2], to = argv[3], every_nth = argv[4],
                       ext = ext)
     elif (action == 'get_props'):
-        results = get_video_props(sys.argv[1])
+        results = get_video_props(sys.argv[2])
         print('Total length:', results['total_length'])
         print('Total_size:', results['total_size'])
         print('To 20:', results['to_twenty'])
