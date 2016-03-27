@@ -5,25 +5,25 @@ import os
 import shutil
 import matplotlib.pyplot as plt
 
-from hashes import p_hash, compare_hashes
-
+from hashes import compare_hashes
 
 class ScreenDetector:
     OTSU = 1
     ITERATE = 2
     SEARCHED_FRAMES = 50
 
-
+    
     def __init__(self, source, dest):
         self.source = source
         self.dest = dest
+        self.dest_images = os.path.join(dest, 'screen_detector/')
         self.best_score = 1
-        self.hash_original = ""
+        self.hash_original = ''
         self.original_image = None
         self.best_image = None
         self.stats = {}
 
-
+    
     def find_screen(self, method):
         '''
         Iterate through all the advertising in the given folder, find screen
@@ -32,7 +32,7 @@ class ScreenDetector:
         '''
         self._clean_or_create_dest_dir()
         average_error = 0
-        os.chdir(source)
+        os.chdir(self.source)
 
         for advertising in os.listdir(os.getcwd()):
             os.chdir(advertising)
@@ -40,7 +40,7 @@ class ScreenDetector:
             for sample in os.listdir(os.getcwd()):
                 self.best_score = 1
                 os.chdir(sample)
-                image_name = advertising + '_' + sample + '.jpg'
+                image_name = '{0}_{1}.jpg'.format(advertising, sample)
                 print(image_name)
 
                 # also turns into grayscale
@@ -49,20 +49,20 @@ class ScreenDetector:
                 self.hash_original = self._get_original_hash(image_data['img'])
                 self._call_recognition_method(img, method)
                 
-                cv2.imwrite(os.path.join(self.dest, image_name), 
+                cv2.imwrite(os.path.join(self.dest_images, image_name), 
                                          self.best_image)
                 accuracy = self._get_position_accuracy(image_data['position'])
                 average_error += accuracy
                 self.stats[image_name] = accuracy
 
-                os.chdir("../")
-            os.chdir("../")
-            os.chdir("../")
+                os.chdir('../')
+            os.chdir('../')
+            os.chdir('../')
         self._put_stats_into_file()
         self._create_hist()
         return float(average_error) / len(self.stats) 
     
-
+    
     def _iterate_thresholds(self, img):
         '''
         Detect tv in the image using iteration through threshold values.
@@ -73,7 +73,7 @@ class ScreenDetector:
             ret, thresh = cv2.threshold(img, value, 255, cv2.THRESH_BINARY)
             self._find_contours(img, thresh)
 
-
+    
     def _otsu(self, img):
         '''
         Detect tv in the image using Otsu's binarization.
@@ -83,7 +83,7 @@ class ScreenDetector:
                                     cv2.THRESH_BINARY+cv2.THRESH_OTSU)
         self._find_contours(img, thresh)
 
-
+    
     def _find_contours(self, img, thresh):
         '''
         Find contours in the thresholded image, keep only the largest
@@ -110,34 +110,34 @@ class ScreenDetector:
                     if (self._has_best_score(roi)):
                         self.best_image = roi
         
-
+    
     def _get_original_image_data(self):
         '''
-        Return image object and position on which it appears
+        Return image object and position in which it appears
         in the original video.
         '''
         try:
-            with open('target_frame.txt', "r") as target:
+            with open('target_frame.txt', 'r') as target:
                 temp = target.read().splitlines()
                 frame = temp[0]
         except IOError:
-            raise("Error while reading target_frame text file!")
-        img = cv2.imread(os.path.join(os.getcwd(), "../../frames",
+            raise Exception('Error while reading target_frame text file!')
+        img = cv2.imread(os.path.join(os.getcwd(), '../../frames',
                          frame + ".jpg"))
         return {'img': img, 'position': frame}
 
-
+    
     def _get_original_hash(self, img):
-        return p_hash(img, convert=True)
+        return per_hash(img, convert=True)
 
-
+    
     def _is_big_enough(self, img, w, h):
         h_orig, w_orig = img.shape
         return ((w * h) >= ((h_orig * w_orig) / 20))
 
-
+    
     def _has_best_score(self, img):
-        hash_string = p_hash(img, convert=False)
+        hash_string = per_hash(img, convert=False)
         difference = compare_hashes(hash_string, self.hash_original)
         if (difference < self.best_score):
             self.best_score = difference
@@ -145,16 +145,16 @@ class ScreenDetector:
         else:
             return False
 
-
+    
     def _call_recognition_method(self, img, method):
         if (method == ScreenDetector.OTSU):
             self._otsu(img)
         elif (method == ScreenDetector.ITERATE):
             self._iterate_thresholds(img)
         else:
-            raise("Unsupported method provided.")
+            raise Exception('Unsupported method provided.')
         
-
+    
     def _get_position_accuracy(self, right_position):
         right_position = int(right_position)
         start = right_position - ScreenDetector.SEARCHED_FRAMES
@@ -165,34 +165,36 @@ class ScreenDetector:
         best_fit = 1
         best_fit_position = 0
 
-        hash2 = p_hash(self.best_image, convert=False)
+        hash2 = per_hash(self.best_image, convert=False)
         for i in range(start, end):
             pos = str(i)
             if (i < 10):
-                pos = "0" + pos
-            img = cv2.imread('../../frames/' + pos + ".jpg")
-            hash1 = p_hash(img, convert=True)
+                pos = '0' + pos
+            img = cv2.imread('../../frames/{0}.jpg'.format(pos))
+            hash1 = per_hash(img, convert=True)
             diff = compare_hashes(hash1, hash2)
             if (diff < best_fit):
                 best_fit = diff
                 best_fit_position = i
         return abs(right_position - best_fit_position)
 
-
+    
     def _clean_or_create_dest_dir(self):
         try:
-            if (os.path.isdir(self.dest)):
+            if (os.path.isdir(self.dest_images)):
                 for item in os.listdir(self.dest):
                     if (os.path.isdir(os.path.join(self.dest, item))):
                         shutil.rmtree(os.path.join(self.dest, item))
                     else:
                         os.remove(os.path.join(self.dest, item))
             else:
-                os.mkdir(self.dest)
+                if (not os.path.isdir(self.dest)):
+                    os.mkdir(self.dest)
+            os.mkdir(self.dest_images)
         except:
-            raise("Could not prepare destination directory.")
+            raise Exception('Could not prepare destination directory.')
 
-
+    
     def _put_stats_into_file(self):
         try:
             os.mkdir(os.path.join(self.dest, 'results'))
@@ -201,11 +203,12 @@ class ScreenDetector:
                 self.stats = collections.OrderedDict(sorted(self.stats.items()))
                 
                 for key in self.stats.keys():
-                    results.write(key + ":" + str(self.stats[key]) + "\n")
+                    results.write('{0}: {1}\n'.format(key,
+                        str(self.stats[key])))
         except:
-            raise("Could not save the results.")
+            raise Exception('Could not save the results.')
 
-
+    
     def _create_hist(self):
         plt.hist(list(self.stats.values()),
                 bins=ScreenDetector.SEARCHED_FRAMES+1,
@@ -222,14 +225,23 @@ class ScreenDetector:
         plt.savefig(hist_path)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     source = sys.argv[1]
-    dest = os.path.join(os.getcwd(), 'src/screen_detector')
+    dest = os.path.join(os.getcwd(), 'src/')
     sd = ScreenDetector(source, dest)
-
+    
+    h_name = 'p_hash'
     if (len(sys.argv) > 2):
+        if (len(sys.argv) > 3):
+            h_argv = sys.argv[3]
+            if (h_argv == 'a'):
+                h_name = 'a_hash'
+            elif (h_argv == 'd'):
+                h_name = 'd_hash'
+        per_hash = getattr(__import__('hashes', fromlist=[h_name]), h_name)
         average_error = sd.find_screen(int(sys.argv[2]))
     else:
+        per_hash = getattr(__import__('hashes', fromlist=[h_name]), h_name)
         average_error = sd.find_screen(ScreenDetector.ITERATE)
-    print("Average error: ", average_error)
+    print('Average error: ', average_error)
 

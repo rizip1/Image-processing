@@ -10,6 +10,7 @@ def _check_params(argv):
         sys.stderr.write('Please provide all required arguments.')
         sys.exit()
 
+
 def _prepare_folder(to):
     path = os.path.join(os.getcwd(), to)
     if (os.path.isdir(path)):
@@ -23,6 +24,7 @@ def _prepare_folder(to):
         os.mkdir(path)
     return path
 
+
 def _get_length(filename):
     result = subprocess.Popen(['ffprobe', filename],
         stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
@@ -33,6 +35,7 @@ def _get_length(filename):
         if m:
             matched =  m.group(1).split(":")
             return (int(matched[1]) * 60) + float(matched[2])
+
 
 def obtain_images(source, to, every_nth, ext):
     every_nth = int(every_nth)
@@ -66,6 +69,7 @@ def obtain_images(source, to, every_nth, ext):
     print('Number of frames scanned: {}'.format(total_count))
     print('Number of frames saved: {}'.format(saved_count))
 
+
 def create_hash_structure(directory, number_of_dirs = 10):
     os.chdir(directory)
 
@@ -77,13 +81,13 @@ def create_hash_structure(directory, number_of_dirs = 10):
             os.mknod(os.path.join(advertising, str(i + 1), 'target_frame.txt'))
         os.chdir("../")
 
-'''
-Used to get information about videos length
-and size in desired folder which must in
-same form as folder for video tester.
-'''
 
 def get_video_props(dest):
+    '''
+    Used to get information about videos length
+    and size in desired folder which must in
+    same form as folder for video tester.
+    '''
     total_length = 0
     total_size = 0
     for set_id in os.listdir(dest):
@@ -107,6 +111,7 @@ def get_video_props(dest):
     results['to_twenty'] = results['total_size'] / results['total_length'] * 20
     return results
 
+
 if __name__ == '__main__':
     action = sys.argv[1]
     if (action == 'create_dirs'):
@@ -125,3 +130,4 @@ if __name__ == '__main__':
         print('Total length:', results['total_length'])
         print('Total_size:', results['total_size'])
         print('To 20:', results['to_twenty'])
+
