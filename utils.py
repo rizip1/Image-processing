@@ -65,7 +65,6 @@ def frame_parser(source, to, every_nth, ext):
         total_count += 1
 
     cap.release()
-    cv2.destroyAllWindows()
     print('Number of frames scanned: {}'.format(total_count))
     print('Number of frames saved: {}'.format(saved_count))
 
