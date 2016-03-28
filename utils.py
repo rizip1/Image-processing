@@ -56,7 +56,7 @@ def frame_parser(source, to, every_nth, ext):
         if ((total_count % every_nth) == 0):
             saved_count += 1
 
-        if (saved_count < 9):
+        if (saved_count < 10):
             name = '0{0}.{1}'.format(saved_count, ext)
         else:
             name = '{0}.{1}'.format(saved_count, ext)
