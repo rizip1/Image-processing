@@ -4,12 +4,16 @@ import collections
 import os
 import shutil
 import matplotlib.pyplot as plt
+import numpy as np
 
 from hashes import compare_hashes
 
 class ScreenDetector:
     OTSU = 1
     ITERATE = 2
+    ADAPTIVE_MEAN = 3
+    ADAPTIVE_GAUSSIAN = 4
+    CANNY = 5
     SEARCHED_FRAMES = 50
 
     
@@ -48,7 +52,7 @@ class ScreenDetector:
                 image_data = self._get_original_image_data()
                 self.hash_original = self._get_original_hash(image_data['img'])
                 self._call_recognition_method(img, method)
-                
+
                 cv2.imwrite(os.path.join(self.dest_images, image_name), 
                                          self.best_image)
                 accuracy = self._get_position_accuracy(image_data['position'])
@@ -83,13 +87,48 @@ class ScreenDetector:
                                     cv2.THRESH_BINARY+cv2.THRESH_OTSU)
         self._find_contours(img, thresh)
 
+
+    def _adaptive_threshold_mean(self, img):
+        '''
+        Detect tv in the image using adaptive threshold.
+        '''
+        blur = cv2.medianBlur(img, 5)
+        thresh = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+                                       cv2.THRESH_BINARY, 11, 2)
+        self._find_contours(img, thresh)
     
-    def _find_contours(self, img, thresh):
+    
+    def _adaptive_threshold_gaussian(self, img):
+        '''
+        Detect tv in the image using adaptive threshold.
+        '''
+        blur = cv2.medianBlur(img, 5)
+        thresh = cv2.adaptiveThreshold(blur, 255,
+                                       cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                       cv2.THRESH_BINARY, 11, 2)
+        self._find_contours(img, thresh)
+
+    
+    def _canny_edge(self, img):
+        '''
+        Detect tv in the image using canny edge detection.
+        '''
+        sigma = 0.33
+        med = np.median(img)
+
+        l_bound = int(max(0, (1.0 - sigma) * med))
+        u_bound = int(min(255, (1.0 + sigma) * med))
+
+        canny = cv2.Canny(img, l_bound, u_bound)
+        self._find_contours(img, canny)
+    
+    
+    def _find_contours(self, img, filtered):
         '''
         Find contours in the thresholded image, keep only the largest
         ones and from these choose one with best hash score.
         '''
-        _, cnts, _ = cv2.findContours(thresh.copy(), cv2.RETR_TREE, 
+        _, cnts, _ = cv2.findContours(filtered.copy(), cv2.RETR_TREE, 
             cv2.CHAIN_APPROX_SIMPLE)
         cnts = sorted(cnts, key = cv2.contourArea, reverse = True)[:4]
 
@@ -151,8 +190,16 @@ class ScreenDetector:
             self._otsu(img)
         elif (method == ScreenDetector.ITERATE):
             self._iterate_thresholds(img)
+        elif (method == ScreenDetector.ADAPTIVE_MEAN):
+            self._adaptive_threshold_mean(img)
+        elif (method == ScreenDetector.ADAPTIVE_GAUSSIAN):
+            self._adaptive_threshold_gaussian(img)
+        elif (method == ScreenDetector.CANNY):
+            self._canny_edge(img)
         else:
             raise Exception('Unsupported method provided.')
+        if (self.best_image is None):
+            self.best_image = img
         
     
     def _get_position_accuracy(self, right_position):
@@ -164,7 +211,7 @@ class ScreenDetector:
         
         best_fit = 1
         best_fit_position = 0
-
+        
         hash2 = per_hash(self.best_image, convert=False)
         for i in range(start, end):
             pos = str(i)
