@@ -37,7 +37,7 @@ def _get_length(filename):
             return (int(matched[1]) * 60) + float(matched[2])
 
 
-def obtain_images(source, to, every_nth, ext):
+def frame_parser(source, to, every_nth, ext):
     every_nth = int(every_nth)
     total_count = 0
     saved_count = 0
@@ -123,7 +123,7 @@ if __name__ == '__main__':
         argv = sys.argv
         _check_params(argv)
         ext = (argv[4], 'jpg')[len(argv) > 3]
-        obtain_images(source = argv[2], to = argv[3], every_nth = argv[4],
+        frame_parser(source = argv[2], to = argv[3], every_nth = argv[4],
                       ext = ext)
     elif (action == 'get_props'):
         results = get_video_props(sys.argv[2])
