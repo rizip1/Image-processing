@@ -17,10 +17,11 @@ class ScreenDetector:
     SEARCHED_FRAMES = 50
 
     
-    def __init__(self, source, dest):
+    def __init__(self, source, dest, title='Threshold and hash results'):
         self.source = source
         self.dest = dest
         self.dest_images = os.path.join(dest, 'screen_detector/')
+        self.title = title
         self.best_score = 1
         self.hash_original = ''
         self.original_image = None
@@ -44,7 +45,9 @@ class ScreenDetector:
             for sample in os.listdir(os.getcwd()):
                 self.best_score = 1
                 os.chdir(sample)
-                image_name = '{0}_{1}.jpg'.format(advertising, sample)
+                image_name = '{0}_{1}.jpg'.format(advertising,
+                                                 (sample, '0{0}'.format(sample))
+                                                 [int(sample) < 10])
                 print(image_name)
 
                 # also turns into grayscale
@@ -252,6 +255,16 @@ class ScreenDetector:
                 for key in self.stats.keys():
                     results.write('{0}: {1}\n'.format(key,
                         str(self.stats[key])))
+                
+                results.write('\n')
+                final_stats = {}
+                for item in self.stats.values():
+                    if (item in final_stats):
+                        final_stats[item] += 1
+                    else:
+                        final_stats[item] = 1
+                for key in final_stats:
+                    results.write('{0}: {1}\n'.format(key, final_stats[key]))
         except:
             raise Exception('Could not save the results.')
 
@@ -263,7 +276,7 @@ class ScreenDetector:
                 color='pink')
         plt.xlabel('Error')
         plt.ylabel('Advertising count')
-        plt.title('Threshold and hash results')
+        plt.title(self.title)
 
         plt.axis([0, ScreenDetector.SEARCHED_FRAMES+1, 0, len(self.stats)+1])
         plt.grid(True)
@@ -275,7 +288,8 @@ class ScreenDetector:
 if __name__ == '__main__':
     source = sys.argv[1]
     dest = os.path.join(os.getcwd(), 'src/')
-    sd = ScreenDetector(source, dest)
+    sd = (ScreenDetector(source, dest),
+          ScreenDetector(source, dest, title=sys.argv[4]))[len(sys.argv) > 4]
     
     h_name = 'p_hash'
     if (len(sys.argv) > 2):
