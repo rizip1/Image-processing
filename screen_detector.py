@@ -65,8 +65,8 @@ class ScreenDetector:
                 os.chdir('../')
             os.chdir('../')
             os.chdir('../')
-        self._put_stats_into_file()
-        self._create_hist()
+        y_max = self._put_stats_into_file()
+        self._create_hist(y_max)
         return float(average_error) / len(self.stats) 
     
     
@@ -246,6 +246,10 @@ class ScreenDetector:
 
     
     def _put_stats_into_file(self):
+        '''
+        Put statistics into results.txt file and return
+        y axis threshold for _create_hist function.
+        '''
         try:
             os.mkdir(os.path.join(self.dest, 'results'))
             file_name = 'results/results.txt'
@@ -265,11 +269,12 @@ class ScreenDetector:
                         final_stats[item] = 1
                 for key in final_stats:
                     results.write('{0}: {1}\n'.format(key, final_stats[key]))
+                return max(final_stats.values())
         except:
             raise Exception('Could not save the results.')
 
     
-    def _create_hist(self):
+    def _create_hist(self, y_max):
         plt.hist(list(self.stats.values()),
                 bins=ScreenDetector.SEARCHED_FRAMES+1,
                 range=(0, ScreenDetector.SEARCHED_FRAMES+1), width=1, 
@@ -278,7 +283,7 @@ class ScreenDetector:
         plt.ylabel('Advertising count')
         plt.title(self.title)
 
-        plt.axis([0, ScreenDetector.SEARCHED_FRAMES+1, 0, len(self.stats)+1])
+        plt.axis([0, ScreenDetector.SEARCHED_FRAMES+1, 0, y_max+1])
         plt.grid(True)
 
         hist_path = os.path.join(self.dest, 'results/histogram.png')
