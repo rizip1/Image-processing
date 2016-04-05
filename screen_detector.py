@@ -280,7 +280,7 @@ class ScreenDetector:
                 range=(0, ScreenDetector.SEARCHED_FRAMES+1), width=1, 
                 color='pink')
         plt.xlabel('Error')
-        plt.ylabel('Advertising count')
+        plt.ylabel('Frames count')
         plt.title(self.title)
 
         plt.axis([0, ScreenDetector.SEARCHED_FRAMES+1, 0, y_max+1])
