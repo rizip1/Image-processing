@@ -293,8 +293,11 @@ class ScreenDetector:
 if __name__ == '__main__':
     source = sys.argv[1]
     dest = os.path.join(os.getcwd(), 'src/')
-    sd = (ScreenDetector(source, dest),
-          ScreenDetector(source, dest, title=sys.argv[4]))[len(sys.argv) > 4]
+    
+    if (len(sys.argv) > 4):
+        sd = ScreenDetector(source, dest, title=sys.argv[4])
+    else:
+        sd = ScreenDetector(source, dest)
     
     h_name = 'p_hash'
     if (len(sys.argv) > 2):
