@@ -28,6 +28,10 @@ After the script finishes the results will be store in cwd/src directory.
 ### Create data structure
 The script requires data structure as shown in the image.
 
+![alt text][structure]
+
+[structure]: https://github.com/rizip1/Image-processing/blob/master/public/data_structure.png "Data structure"
+
 To create the initial structure create an empty directory for each advertising in your destination folder and then run:
 ``` python
 python screen_detector.py <data_folder> <count>
