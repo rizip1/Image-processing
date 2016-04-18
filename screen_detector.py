@@ -36,7 +36,7 @@ class ScreenDetector:
         in given_folder/results/ directory.
         '''
         self._clean_or_create_dest_dir()
-        average_error = 0
+        error = 0
         os.chdir(self.source)
 
         for advertising in os.listdir(os.getcwd()):
@@ -59,16 +59,17 @@ class ScreenDetector:
                 cv2.imwrite(os.path.join(self.dest_images, image_name), 
                                          self.best_image)
                 accuracy = self._get_position_accuracy(image_data['position'])
-                average_error += accuracy
+                error += accuracy
                 self.stats[image_name] = accuracy
 
                 os.chdir('../')
             os.chdir('../')
             os.chdir('../')
-        y_max = self._put_stats_into_file()
+        average_error = float(error) / len(self.stats)
+        y_max = self._put_stats_into_file(average_error)
         self._create_hist(y_max)
-        return float(average_error) / len(self.stats) 
-    
+        return average_error
+
     
     def _iterate_thresholds(self, img):
         '''
@@ -245,7 +246,7 @@ class ScreenDetector:
             raise Exception('Could not prepare destination directory.')
 
     
-    def _put_stats_into_file(self):
+    def _put_stats_into_file(self, average_error):
         '''
         Put statistics into results.txt file and return
         y axis threshold for _create_hist function.
@@ -269,6 +270,7 @@ class ScreenDetector:
                         final_stats[item] = 1
                 for key in final_stats:
                     results.write('{0}: {1}\n'.format(key, final_stats[key]))
+                results.write('\naverage_error: {0}'.format(average_error))
                 return max(final_stats.values())
         except:
             raise Exception('Could not save the results.')
