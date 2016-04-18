@@ -19,7 +19,7 @@ class ScreenDetector:
     ADAPTIVE_MEAN = 3
     ADAPTIVE_GAUSSIAN = 4
     CANNY = 5
-    SEARCHED_FRAMES = 50
+    SEARCHED_FRAMES = 20
 
     def __init__(self, source, dest, title='Threshold and hash results'):
         """Perform shared properties initialization."""
@@ -72,7 +72,8 @@ class ScreenDetector:
                 os.chdir('../')
             os.chdir('../')
             os.chdir('../')
-        average_error = float(error) / len(self.stats)
+
+        average_error = round(float(error) / len(self.stats), 2)
         y_max = self._put_stats_into_file(average_error)
         self._create_hist(y_max)
         return average_error
@@ -191,26 +192,26 @@ class ScreenDetector:
 
     def _get_position_accuracy(self, right_position):
         right_position = int(right_position)
-        start = right_position - ScreenDetector.SEARCHED_FRAMES
-        if (start <= 0):
-            start = 1
-        end = right_position + ScreenDetector.SEARCHED_FRAMES
-
         best_fit = 1
         best_fit_position = 0
-
         hash2 = per_hash(self.best_image, convert=False)
-        for i in range(start, end):
+
+        for i in range(1, 10000):
             pos = str(i)
             if (i < 10):
                 pos = '0' + pos
             img = cv2.imread('../../frames/{0}.jpg'.format(pos))
+            if (img is None):
+                break
             hash1 = per_hash(img, convert=True)
             diff = compare_hashes(hash1, hash2)
             if (diff < best_fit):
                 best_fit = diff
                 best_fit_position = i
-        return abs(right_position - best_fit_position)
+        error = abs(right_position - best_fit_position) // 2
+        if (error > 20):
+            error = 20
+        return error
 
     def _clean_or_create_dest_dir(self):
         try:
@@ -249,7 +250,7 @@ class ScreenDetector:
                         final_stats[item] = 1
                 for key in final_stats:
                     results.write('{0}: {1}\n'.format(key, final_stats[key]))
-                results.write('\naverage_error: {0}'.format(average_error))
+                results.write('\naverage error: {0}'.format(average_error))
                 return max(final_stats.values())
         except:
             raise Exception('Could not save the results.')
