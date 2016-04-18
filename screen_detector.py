@@ -58,9 +58,9 @@ class ScreenDetector:
 
                 cv2.imwrite(os.path.join(self.dest_images, image_name), 
                                          self.best_image)
-                accuracy = self._get_position_accuracy(image_data['position'])
-                error += accuracy
-                self.stats[image_name] = accuracy
+                accuracy_error = self._get_position_accuracy(image_data['position'])
+                error += accuracy_error
+                self.stats[image_name] = accuracy_error
 
                 os.chdir('../')
             os.chdir('../')
@@ -137,10 +137,10 @@ class ScreenDetector:
         cnts = sorted(cnts, key = cv2.contourArea, reverse = True)[:4]
 
         # loop over our contours
-        for c in cnts:
+        for contour in cnts:
             # approximate the contour
-            peri = cv2.arcLength(c, True)
-            approx = cv2.approxPolyDP(c, 0.04 * peri, True)
+            perimeter = cv2.arcLength(contour, True)
+            approx = cv2.approxPolyDP(contour, 0.04 * perimeter, True)
 
             # if our approximated contour has four points, then
             # we can assume that we have found our screen
@@ -149,9 +149,9 @@ class ScreenDetector:
                 # which belongs to contour
                 x, y, w, h = cv2.boundingRect(approx)
                 if (self._is_big_enough(img, w, h)):
-                    roi = img[y:y+h, x:x+w]
-                    if (self._has_best_score(roi)):
-                        self.best_image = roi
+                    extract = img[y:y+h, x:x+w]
+                    if (self._has_best_score(extract)):
+                        self.best_image = extract
         
     
     def _get_original_image_data(self):
