@@ -1,9 +1,12 @@
+"""Module for support functions."""
+
 import os
 import sys
 import cv2
 import shutil
 import subprocess
 import re
+
 
 def _check_params(argv):
     if len(argv) < 4:
@@ -27,17 +30,18 @@ def _prepare_folder(to):
 
 def _get_length(filename):
     result = subprocess.Popen(['ffprobe', filename],
-        stdout = subprocess.PIPE, stderr = subprocess.STDOUT)
+                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     content = [x for x in result.stdout.readlines()]
     for item in content:
         item = str(item)
         m = re.search('Duration: (.+), start', item)
         if m:
-            matched =  m.group(1).split(":")
+            matched = m.group(1).split(":")
             return (int(matched[1]) * 60) + float(matched[2])
 
 
 def frame_parser(source, to, every_nth, ext):
+    """Parse video into frames."""
     every_nth = int(every_nth)
     total_count = 0
     saved_count = 0
@@ -50,7 +54,7 @@ def frame_parser(source, to, every_nth, ext):
     while(cap.isOpened()):
         ret, frame = cap.read()
 
-        if ret == False:
+        if not ret:
             break
 
         if ((total_count % every_nth) == 0):
@@ -69,7 +73,8 @@ def frame_parser(source, to, every_nth, ext):
     print('Number of frames saved: {}'.format(saved_count))
 
 
-def create_hash_structure(directory, number_of_dirs = 10):
+def create_hash_structure(directory, number_of_dirs=10):
+    """Create directory structure for screen detector."""
     os.chdir(directory)
 
     for advertising in os.listdir(os.getcwd()):
@@ -82,11 +87,11 @@ def create_hash_structure(directory, number_of_dirs = 10):
 
 
 def get_video_props(dest):
-    '''
-    Used to get information about videos length
-    and size in desired folder which must in
-    same form as folder for video tester.
-    '''
+    """
+    Used to get information about videos length and size.
+
+    Folder structure must be same as for video tester.
+    """
     total_length = 0
     total_size = 0
     for set_id in os.listdir(dest):
@@ -99,7 +104,7 @@ def get_video_props(dest):
                 if not os.path.isdir(os.path.join(dest, set_id, video, rec)):
                     continue
                 total_length += (_get_length(os.path.join(dest, set_id, video,
-                                                         rec, rec + '.mp4')))
+                                                          rec, rec + '.mp4')))
                 size = (os.path.getsize(os.path.join(dest, set_id, video,
                                                      rec, rec + '.mp4')))
                 size = size / (1024 * 1024)
@@ -122,11 +127,10 @@ if __name__ == '__main__':
         argv = sys.argv
         _check_params(argv)
         ext = (argv[4], 'jpg')[len(argv) > 3]
-        frame_parser(source = argv[2], to = argv[3], every_nth = argv[4],
-                      ext = ext)
+        frame_parser(source=argv[2], to=argv[3], every_nth=argv[4],
+                     ext=ext)
     elif (action == 'get_props'):
         results = get_video_props(sys.argv[2])
         print('Total length:', results['total_length'])
         print('Total_size:', results['total_size'])
         print('To 20:', results['to_twenty'])
-

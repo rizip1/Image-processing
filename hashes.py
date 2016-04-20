@@ -1,23 +1,23 @@
+"""Module for perceptual hashes functions."""
+
 import cv2
 import numpy as np
 
 
 def p_hash(img, convert):
-    '''
-    Creates pHash string from given image.
-    '''
+    """Create pHash string from given image."""
     big_kernel = 32
     small_kernel = int(big_kernel / 4)
 
     img = _get_shrinked_grayscale(img, big_kernel, big_kernel, convert)
-    img = np.float32(img) / 255.0 
+    img = np.float32(img) / 255.0
     img = cv2.dct(img)
-   
+
     average = _get_top_left_average(img, small_kernel)
     hash_string = []
-    
+
     for i in range(small_kernel):
-         for j in range(small_kernel):
+        for j in range(small_kernel):
             if (img[i][j] < average):
                 hash_string.append('1')
             else:
@@ -27,9 +27,7 @@ def p_hash(img, convert):
 
 
 def a_hash(img, convert):
-    '''
-    Creates aHash string from given image.
-    '''
+    """Create aHash string from given image."""
     img = _get_shrinked_grayscale(img, 8, 8, convert)
     average = _get_intensity_average(img)
     hash_string = []
@@ -45,9 +43,7 @@ def a_hash(img, convert):
 
 
 def d_hash(img, convert):
-    '''
-    Creates dHash string from given image.
-    '''
+    """Create dHash string from given image."""
     img = _get_shrinked_grayscale(img, 9, 8, convert)
     hash_string = []
 
@@ -62,29 +58,27 @@ def d_hash(img, convert):
 
 
 def compare_hashes(hash1, hash2):
-    '''
-    Compare two string hashes and retrieve float
-    in range [0,1] representing their similarity.
+    """
+    Compare two string hashes and retrieve their similarity.
+
+    Similarity is in range [0,1].
     The lower number represents higher similarity.
-    '''
+    """
     if (len(hash1) != len(hash2)):
         return None
-    
+
     mismatches = 0
     for i in range(len(hash1)):
         if (hash1[i] != hash2[i]):
             mismatches += 1
-    
+
     return float(mismatches) / len(hash1)
 
 
 def _get_shrinked_grayscale(img, width, height, convert=True):
-    '''
-    Shrink image using given width and height and
-    convert it into grayscale.
-    '''
+    """Shrink image using width and height and convert it into grayscale."""
     img = cv2.resize(img, (width, height), fx=0, fy=0,
-                     interpolation = cv2.INTER_AREA)
+                     interpolation=cv2.INTER_AREA)
     if (convert):
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     return img
@@ -103,16 +97,16 @@ def _get_intensity_average(img):
 
 
 def _get_top_left_average(img, size):
-    '''
+    """
     Return average from top left pixels excluding first(DC).
+
     Top left area is determined by `size` param.
-    '''
+    """
     average = 0
     for i in range(size):
         for j in range(size):
             average += img[i][j]
-    
+
     average -= img[0][0]
     average /= ((size**2) - 1)
     return average
-
