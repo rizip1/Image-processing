@@ -7,7 +7,7 @@ Check you have openCV, matplotlib and numpy installed.
 To evaluate data in the given folder using chosen perceptual hash
 algorithm and method use:
 ``` python
-python utils.py create_dirs <method> <perc_hash> <hist_title>
+python utils.py screen_detector <method> <perc_hash> <hist_title>
 ```
 **hist_title**: specifies histogram title
 
@@ -34,7 +34,7 @@ The script requires data structure as shown in the image.
 
 To create the initial structure create an empty directory for each advertising in your destination folder and then run:
 ``` python
-python screen_detector.py <data_folder> <count>
+python utils.py create_dirs  <data_folder> <count>
 ```
 **count** is the number of folders to be created in each advertising directory.
 
